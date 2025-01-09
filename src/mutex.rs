@@ -81,7 +81,9 @@ impl SharedMutex {
     /// [`last_os_error`]: https://doc.rust-lang.org/stable/std/io/struct.Error.html#method.last_os_error.
     pub fn new() -> std::io::Result<Self> {
         let mut mutex = SharedMemoryObject::new(PTHREAD_MUTEX_INITIALIZER)?;
-        initialize_mutex(mutex.get_mut())?;
+        // SAFETY: The mutex is exclusively owned by current thread
+        // due its not shared because under construction
+        unsafe { initialize_mutex(mutex.get_mut())? };
 
         let owner_pid = getpid();
         Ok(Self { mutex, owner_pid })
@@ -114,7 +116,7 @@ impl SharedMutex {
     }
 
     pub(crate) fn get_mut(&mut self) -> *mut pthread_mutex_t {
-        self.mutex.get_mut()
+        self.mutex.get_ptr()
     }
 }
 

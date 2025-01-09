@@ -27,14 +27,22 @@ use std::{mem::size_of, ptr::null_mut};
 /// assert!(pid >= 0);
 ///
 /// if pid == 0 {
-///     assert_eq!(*shared.get(), 123);
-///     *shared.get_mut() = 456;
-///     sleep(Duration::from_millis(40));
-///     assert_eq!(*shared.get(), 789);
+///     // SAFETY: Relying on timings, real program should 
+///     // use proper synchronization primitives
+///     unsafe {
+///         assert_eq!(*shared.get(), 123);
+///         *shared.get_mut() = 456;
+///         sleep(Duration::from_millis(40));
+///         assert_eq!(*shared.get(), 789);
+///     }
 /// } else {
-///     sleep(Duration::from_millis(20));
-///     assert_eq!(*shared.get(), 456);
-///     *shared.get_mut() = 789;
+///     // SAFETY: Relying on timings, real program should 
+///     // use proper synchronization primitives
+///     unsafe {
+///         sleep(Duration::from_millis(20));
+///         assert_eq!(*shared.get(), 456);
+///         *shared.get_mut() = 789;
+///     }
 /// }
 /// #
 /// #     Ok(())
@@ -63,18 +71,26 @@ impl<T: Sync + Send> SharedMemoryObject<T> {
     /// Returns reference to underlying object.
     ///
     /// # Safety
-    /// See [`get_mut`](#method.get_mut).
-    pub fn get(&self) -> &T {
-        unsafe { &*self.ptr }
+    /// Caller must synchronize the accesses to avoid data race and make sure
+    /// there no active mutable references from other process for as long as
+    /// the returned reference existing.
+    pub unsafe fn get(&self) -> &T {
+        &*self.ptr
     }
 
     /// Returns mutable reference to underlying object.
     ///
     /// # Safety
-    /// This function (and [`get`](#method.get)) is always safe to call, but access to data under returned reference
-    /// must be somehow synchronized with another processes to avoid data race.
-    pub fn get_mut(&mut self) -> &mut T {
-        unsafe { &mut *self.ptr }
+    /// Caller must synchronize the accesses to avoid data race and make sure
+    /// there no other references from other process for as long as the &mut
+    /// reference existing.
+    pub unsafe fn get_mut(&mut self) -> &mut T {
+        &mut *self.ptr
+    }
+    
+    /// Returns pointer to the shared object
+    pub(crate) fn get_ptr(&self) -> *mut T {
+        self.ptr
     }
 }
 

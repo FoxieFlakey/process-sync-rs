@@ -78,7 +78,9 @@ impl SharedCondvar {
     /// [`last_os_error`]: https://doc.rust-lang.org/stable/std/io/struct.Error.html#method.last_os_error
     pub fn new() -> std::io::Result<Self> {
         let mut condvar = SharedMemoryObject::new(PTHREAD_COND_INITIALIZER)?;
-        initialize_condvar(condvar.get_mut())?;
+        // SAFETY: The condvar is exclusively owned by current thread
+        // due its not shared because under construction
+        unsafe { initialize_condvar(condvar.get_mut())? };
 
         let owner_pid = getpid();
         Ok(Self { condvar, owner_pid })

@@ -6,7 +6,9 @@ pub use process_sync::private::SharedMemoryObject;
 
 use common::{sleep, TestOutput};
 
-fn main() {
+// SAFETY: Currently relying on sleeping to luckily avoid
+// data races for tests
+unsafe fn main_test() {
     let mut test_output = TestOutput::new(&["123", "123", "456", "789"]);
 
     let mut value = SharedMemoryObject::new(123).expect("cannot create SharedMemoryObject");
@@ -28,4 +30,8 @@ fn main() {
     test_output.write_line(&format!("{}", value.get()));
     *value.get_mut() = 789;
     sleep(40);
+}
+
+fn main() {
+    unsafe { main_test(); }
 }

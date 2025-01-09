@@ -12,14 +12,22 @@ let pid = unsafe { fork() };
 assert!(pid >= 0);
 
 if pid == 0 {
-    assert_eq!(*shared.get(), 123);
-    *shared.get_mut() = 456;
-    sleep(Duration::from_millis(40));
-    assert_eq!(*shared.get(), 789);
+    // SAFETY: Relying on timings, real program should 
+    // use proper synchronization primitives
+    unsafe {
+        assert_eq!(*shared.get(), 123);
+        *shared.get_mut() = 456;
+        sleep(Duration::from_millis(40));
+        assert_eq!(*shared.get(), 789);
+    }
 } else {
-    sleep(Duration::from_millis(20));
-    assert_eq!(*shared.get(), 456);
-    *shared.get_mut() = 789;
+    // SAFETY: Relying on timings, real program should 
+    // use proper synchronization primitives
+    unsafe {
+        sleep(Duration::from_millis(20));
+        assert_eq!(*shared.get(), 456);
+        *shared.get_mut() = 789;
+    }
 }
 ```
 
